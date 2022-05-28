@@ -24,23 +24,23 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
   const getQuestion = async() => {
-    const preguntas = window.localStorage.getItem('preguntas');
+    //const preguntas = window.localStorage.getItem('preguntas');
 
-    if( preguntas ){
-      setQuestions( JSON.parse(preguntas) )
-    }
-    else{
+    // if( preguntas ){
+    //   setQuestions( JSON.parse(preguntas) )
+    // }
+    //else{
       const response = await fetch("https://opentdb.com/api.php?amount=10");
       const data = await response.json();
       const items = await data.results;
   
       setQuestions( items );
-      window.localStorage.setItem('preguntas', JSON.stringify(items));
+     // window.localStorage.setItem('preguntas', JSON.stringify(items));
     }
-  }
+  //}
   
   getQuestion();
-  },[setQuestions, setAnswers]);
+  },[setQuestions, setAnswers, setActualQuestion]);
 
   React.useEffect(() => {
       setAnswers( questions[actualQuestion]?.incorrect_answers.concat( questions[actualQuestion]?.correct_answer ) )
@@ -54,9 +54,6 @@ const App: React.FC = () => {
       if ( answer === questions[actualQuestion].correct_answer ){
         if( questions[actualQuestion].type === 'multiple' ) setTotalScore( prev => prev + 10);
         else setTotalScore( prev => prev + 5);
-        console.log('correct');
-      }else{
-        console.log('incorrect');
       }
       if( actualQuestion < 10 ){
         setActualQuestion( prev => prev + 1);      
@@ -72,47 +69,55 @@ const App: React.FC = () => {
     if( questions ) setAnswers( questions[actualQuestion]?.incorrect_answers.concat( questions[actualQuestion]?.correct_answer ) )
   }
    
-  console.log( answers); 
-
   return (
     <main className={styles.container}>
       {
         start ? '' : <button className={styles.score} onClick={ startGame }>Start Game</button>
       }
-      <section className={styles.questionContainer}>
-        <div className={styles.questions}>
-          <div className={styles.questionDetails}>
-            <h4 className={styles.category}>Category: {questions[actualQuestion]?.category}</h4>
-            <h4>Difficulty: {questions[actualQuestion]?.difficulty.replaceAll("&quot",'"').replaceAll("&#039","'")}</h4>
-          </div>
-          <div className={styles.questionText}>
-            <h2>{questions[actualQuestion]?.question}</h2> 
-          </div>  
-        </div>
-        <div />
+      {
+        actualQuestion >= 10 ?
+        (
+          <>
+            <h1 className={styles.finalScore}>Final Score: {totalScore}</h1>
+            <button className={styles.finalScore} onClick={ () => setActualQuestion(0) }>Reset</button>
+          </>
+        )
+        :
+        (
+          <section className={styles.questionContainer}>
+            <div className={styles.questions}>
+              <div className={styles.questionDetails}>
+                <h4 className={styles.category}>Category: {questions[actualQuestion]?.category}</h4>
+                <h4>Difficulty: {questions[actualQuestion]?.difficulty}</h4>
+              </div>
+              <div className={styles.questionText}>
+                <h2>{questions[actualQuestion]?.question.replaceAll("&quot;",'"').replaceAll("&#039","'")}</h2> 
+              </div>  
+            </div>
+            <div />
 
-        <section className={styles.anwersContainer}>
-          {
-            answers?.map( ans => (              
-            <button 
-                key={ans} 
-                //className={`${styles.answer} ${showAnswer} ? ${styles.showWrongAnswer} : ${styles.showCorrectAnswer} `}
-                className={`${styles.answer} ${ (showAnswer && ans == questions[actualQuestion].correct_answer ) ?  styles.showWrongAnswer : styles.showCorrectAnswe} `}
-                //className={styles.answer}
-                onClick = { () => checkAnswer(ans)}
-              >
-                  <h4 
-                    className={styles.answerText}
+            <section className={styles.anwersContainer} >
+              {
+                answers?.map( ans => (              
+                <button 
+                    key={ans} 
+                    className={`${styles.answer} ${ !(checking || showAnswer) && styles.answerHover}`}
+                    disabled={ checking || showAnswer }
+                    onClick = { () => checkAnswer(ans)}
                   >
-                      {ans}
-                  </h4>
-              </button>          
-            ))
-          }
-        </section>
-      </section>
-
-
+                      <span
+                        className={`${styles.answerText} ${ (showAnswer && ans == questions[actualQuestion].correct_answer ) ?  styles.showWrongAnswer : (checking && ans == questions[actualQuestion].correct_answer) && styles.showCorrectAnswer} `}
+                      >
+                          {ans}
+                      </span>
+                  </button>          
+                ))
+              }
+            </section>
+          </section>
+        )
+      }
+      
     </main>
   );
 };
